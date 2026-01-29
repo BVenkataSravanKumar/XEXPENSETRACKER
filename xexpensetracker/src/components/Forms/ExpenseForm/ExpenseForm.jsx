@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { useSnackbar } from "notistack";
-import Button from "../../Button/Button";
 import styles from "./ExpenseForm.module.css";
+import Button from "../../Button/Button.jsx";
+import { useEffect, useState } from "react";
+import { useSnackbar } from "notistack";
 
 export default function ExpenseForm({
   setIsOpen,
@@ -17,70 +17,78 @@ export default function ExpenseForm({
     price: "",
     date: "",
   });
-
   const { enqueueSnackbar } = useSnackbar();
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const name = e.target.name;
+    setFormData((prev) => ({ ...prev, [name]: e.target.value }));
   };
 
   const handleAdd = (e) => {
     e.preventDefault();
-
-    if (Number(formData.price) > balance) {
+    if (balance < Number(formData.price)) {
       enqueueSnackbar("Price should be less than the wallet balance", {
         variant: "warning",
       });
+      setIsOpen(false);
       return;
     }
-
     setBalance((prev) => prev - Number(formData.price));
 
-    const lastId = expenseList.length ? expenseList[0].id : 0;
-    setExpenseList([{ ...formData, id: lastId + 1 }, ...expenseList]);
+    const lastId = expenseList.length > 0 ? expenseList[0].id : 0;
+    setExpenseList((prev) => [{ ...formData, id: lastId + 1 }, ...prev]);
 
-    setFormData({ title: "", category: "", price: "", date: "" });
+    setFormData({
+      title: "",
+      category: "",
+      price: "",
+      date: "",
+    });
+
     setIsOpen(false);
   };
-
   const handleEdit = (e) => {
     e.preventDefault();
 
-    const updatedList = expenseList.map((item) => {
-      if (item.id === editId) {
-        const priceDiff = item.price - Number(formData.price);
+    const updated = expenseList.map((item) => {
+      if (item.id == editId) {
+        const priceDifference = item.price - Number(formData.price);
 
-        if (priceDiff < 0 && Math.abs(priceDiff) > balance) {
+        if (priceDifference < 0 && Math.abs(priceDifference) > balance) {
           enqueueSnackbar("Price should not exceed the wallet balance", {
             variant: "warning",
           });
-          return item;
+          setIsOpen(false);
+          return { ...item };
         }
 
-        setBalance((prev) => prev + priceDiff);
+        setBalance((prev) => prev + priceDifference);
         return { ...formData, id: editId };
+      } else {
+        return item;
       }
-      return item;
     });
 
-    setExpenseList(updatedList);
+    setExpenseList(updated);
+
     setIsOpen(false);
   };
-
   useEffect(() => {
     if (editId) {
-      const expenseData = expenseList.find((item) => item.id === editId);
-      if (expenseData) {
-        setFormData({ ...expenseData });
-      }
+      const expenseData = expenseList.find((item) => item.id == editId);
+
+      setFormData({
+        title: expenseData.title,
+        category: expenseData.category,
+        price: expenseData.price,
+        date: expenseData.date,
+      });
     }
-  }, [editId, expenseList]);
+  }, [editId]);
 
   return (
     <div className={styles.formWrapper}>
       <h3>{editId ? "Edit Expense" : "Add Expenses"}</h3>
-
       <form onSubmit={editId ? handleEdit : handleAdd}>
         <input
           type="text"
@@ -115,8 +123,8 @@ export default function ExpenseForm({
         </select>
 
         <input
-          type="date"
           name="date"
+          type="date"
           value={formData.date}
           onChange={handleChange}
           required
@@ -126,11 +134,7 @@ export default function ExpenseForm({
           {editId ? "Edit Expense" : "Add Expense"}
         </Button>
 
-        <Button
-          style="secondary"
-          shadow
-          handleClick={() => setIsOpen(false)}
-        >
+        <Button style="secondary" shadow handleClick={() => setIsOpen(false)}>
           Cancel
         </Button>
       </form>

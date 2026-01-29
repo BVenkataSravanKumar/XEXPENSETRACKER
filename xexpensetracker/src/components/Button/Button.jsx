@@ -7,14 +7,12 @@ export default function Button({
   shadow = false,
   type = "button",
 }) {
-  const className = `
-    ${styles.button}
-    ${styles[style]}
-    ${shadow ? styles.shadow : ""}
-  `;
-
   return (
-    <button type={type} onClick={handleClick} className={className}>
+    <button
+      type={type}
+      onClick={handleClick}
+      className={`${styles.button} ${styles[style]} ${shadow && styles.shadow}`}
+    >
       {children}
     </button>
   );
